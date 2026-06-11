@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prototype — Expense Tracker</title>
+  <style>
+    :root {
+      --color-primary: #16A34A;
+      --color-primary-hover: #15803D;
+      --color-bg: #F8FAFC;
+      --color-surface: #FFFFFF;
+      --color-text: #0F172A;
+      --color-text-muted: #64748B;
+      --color-border: #E2E8F0;
+      --color-income: #16A34A;
+      --color-expense: #DC2626;
+      --font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-family);
+      background: var(--color-bg);
+      color: var(--color-text);
+      line-height: 1.5;
+    }
+    .container { max-width: 1080px; margin: 0 auto; padding: 48px 24px; }
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--color-text);
+    }
+    .subtitle {
+      font-size: 15px;
+      color: var(--color-text-muted);
+      margin-bottom: 32px;
+    }
+    .features { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    .feature-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+    }
+    .feature-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+      border-color: var(--color-primary);
+    }
+    .feature-card.disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+    .feature-card h3 { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+    .feature-card p { font-size: 13px; color: var(--color-text-muted); margin-bottom: 12px; }
+    .feature-card a {
+      color: var(--color-primary);
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .feature-card a:hover { text-decoration: underline; }
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      background: #DCFCE7;
+      color: #166534;
+      margin-left: 6px;
+    }
+    .badge.todo { background: #F1F5F9; color: #64748B; }
+    footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--color-border); color: var(--color-text-muted); font-size: 13px; }
+    footer p { margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Expense Tracker — Prototype</h1>
+    <p class="subtitle">Demo các flow chính của app quản lý chi tiêu cá nhân. Phiên bản: 11/06/2026</p>
+
+    <div class="features">
+      <div class="feature-card">
+        <h3>➕ Thêm giao dịch <span class="badge">Sẵn sàng</span></h3>
+        <p>4 loại giao dịch: Thu nhập, Chi tiêu, Chi tín dụng, Trả nợ. 7 màn end-to-end.</p>
+        <a href="add-transaction/flow-add.html">Xem flow →</a>
+      </div>
+
+      <div class="feature-card disabled">
+        <h3>📋 Lịch sử <span class="badge todo">TODO</span></h3>
+        <p>Danh sách giao dịch theo ngày / tuần / tháng / năm.</p>
+        <a href="#">Chưa có</a>
+      </div>
+
+      <div class="feature-card disabled">
+        <h3>💰 Ngân sách <span class="badge todo">TODO</span></h3>
+        <p>Đặt và theo dõi ngân sách theo danh mục.</p>
+        <a href="#">Chưa có</a>
+      </div>
+
+      <div class="feature-card disabled">
+        <h3>📊 Báo cáo <span class="badge todo">TODO</span></h3>
+        <p>Biểu đồ chi tiêu theo danh mục, theo thời gian.</p>
+        <a href="#">Chưa có</a>
+      </div>
+    </div>
+
+    <footer>
+      <p>⚠️ Đây là prototype tĩnh — không có backend thật, data hardcode để demo.</p>
+      <p>Source: <code>specs/add-transaction/00-brainstorm/add-transaction.md</code></p>
+    </footer>
+  </div>
+</body>
+</html>

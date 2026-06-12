@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Expense Tracker — Prototype</title>
+  <style>
+    :root {
+      --primary: #16A34A;
+      --primary-hover: #15803D;
+      --bg: #F0FDF4;
+      --surface: #FFFFFF;
+      --text: #0F172A;
+      --muted: #64748B;
+      --border: #E2E8F0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--primary);
+      padding: 40px 24px 32px;
+      text-align: center;
+      color: #fff;
+    }
+    header .logo {
+      font-size: 36px;
+      margin-bottom: 8px;
+    }
+    header h1 {
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    header p {
+      font-size: 14px;
+      color: #BBF7D0;
+    }
+    .badge-version {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      margin-top: 10px;
+    }
+
+    /* ── MAIN ── */
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 40px 20px 60px;
+    }
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    /* ── CARDS ── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 14px;
+      margin-bottom: 40px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      text-decoration: none;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(22,163,74,0.12);
+      border-color: var(--primary);
+    }
+    .card.disabled {
+      opacity: 0.45;
+      pointer-events: none;
+    }
+    .card-icon { font-size: 28px; }
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+    .card-meta {
+      margin-top: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .card.disabled .card-meta { color: var(--muted); }
+
+    /* ── STATUS BADGE ── */
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .status.ready  { background: #DCFCE7; color: #15803D; }
+    .status.todo   { background: #F1F5F9; color: #64748B; }
+
+    /* ── PROGRESS ── */
+    .progress-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 40px;
+    }
+    .progress-section h3 {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--muted);
+    }
+    .progress-list { display: flex; flex-direction: column; gap: 10px; }
+    .progress-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+    }
+    .progress-item .dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .dot.done   { background: var(--primary); }
+    .dot.wip    { background: #F59E0B; }
+    .dot.todo   { background: #CBD5E1; }
+    .progress-item span { flex: 1; }
+    .progress-item .pct { font-size: 11px; color: var(--muted); }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center;
+      padding: 24px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+    footer code {
+      background: #F1F5F9;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">💸</div>
+  <h1>Expense Tracker</h1>
+  <p>Prototype tương tác — Demo các flow chính của app quản lý chi tiêu cá nhân</p>
+  <span class="badge-version">v0.1 · 12/06/2026</span>
+</header>
+
+<main>
+
+  <!-- Features -->
+  <p class="section-title">Các tính năng</p>
+  <div class="card-grid">
+
+    <a class="card" href="prototype/add-transaction/flow-add.html">
+      <span class="card-icon">➕</span>
+      <div class="card-title">
+        Thêm giao dịch
+        <span class="status ready">● Sẵn sàng</span>
+      </div>
+      <div class="card-desc">4 loại: Thu nhập, Chi tiêu, Chi tín dụng, Trả nợ. Flow 7 màn end-to-end với validation.</div>
+      <div class="card-meta">Xem prototype →</div>
+    </a>
+
+    <div class="card disabled">
+      <span class="card-icon">📋</span>
+      <div class="card-title">
+        Lịch sử giao dịch
+        <span class="status todo">Sắp có</span>
+      </div>
+      <div class="card-desc">Xem danh sách giao dịch theo ngày / tuần / tháng / năm với bộ lọc.</div>
+      <div class="card-meta">Chưa có prototype</div>
+    </div>
+
+    <div class="card disabled">
+      <span class="card-icon">💰</span>
+      <div class="card-title">
+        Ngân sách
+        <span class="status todo">Sắp có</span>
+      </div>
+      <div class="card-desc">Đặt ngân sách theo danh mục, cảnh báo khi sắp vượt mức.</div>
+      <div class="card-meta">Chưa có prototype</div>
+    </div>
+
+    <div class="card disabled">
+      <span class="card-icon">📊</span>
+      <div class="card-title">
+        Báo cáo
+        <span class="status todo">Sắp có</span>
+      </div>
+      <div class="card-desc">Biểu đồ chi tiêu theo danh mục và theo thời gian.</div>
+      <div class="card-meta">Chưa có prototype</div>
+    </div>
+
+  </div>
+
+  <!-- Progress -->
+  <p class="section-title">Tiến độ prototype</p>
+  <div class="progress-section">
+    <h3>Trạng thái từng flow</h3>
+    <div class="progress-list">
+      <div class="progress-item">
+        <div class="dot done"></div>
+        <span>➕ Thêm giao dịch (4 loại · 7 màn)</span>
+        <span class="pct">✓ Hoàn thành</span>
+      </div>
+      <div class="progress-item">
+        <div class="dot todo"></div>
+        <span>📋 Lịch sử giao dịch</span>
+        <span class="pct">Chưa bắt đầu</span>
+      </div>
+      <div class="progress-item">
+        <div class="dot todo"></div>
+        <span>💰 Ngân sách</span>
+        <span class="pct">Chưa bắt đầu</span>
+      </div>
+      <div class="progress-item">
+        <div class="dot todo"></div>
+        <span>📊 Báo cáo</span>
+        <span class="pct">Chưa bắt đầu</span>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <p>⚠️ Đây là prototype tĩnh — không có backend, dữ liệu hardcode để demo.</p>
+  <p>Repo: <code>expense-tracker</code> · Branch: <code>main</code></p>
+</footer>
+
+</body>
+</html>

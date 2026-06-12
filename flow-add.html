@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thêm giao dịch — Expense Tracker Prototype</title>
+  <style>
+    :root {
+      --primary: #16A34A; --primary-hover: #15803D;
+      --bg: #F8FAFC; --surface: #FFFFFF;
+      --text: #0F172A; --muted: #64748B; --disabled: #94A3B8;
+      --border: #E2E8F0; --border-focus: #16A34A;
+      --error: #DC2626; --error-bg: #FEF2F2;
+      --income: #16A34A; --expense: #DC2626;
+      --income-light: #DCFCE7; --expense-light: #FEF2F2;
+      --warning: #F59E0B; --warning-light: #FFFBEB;
+      --info: #2563EB; --info-light: #EFF6FF;
+      --font: 'Inter', -apple-system, system-ui, sans-serif;
+      --r-sm: 4px; --r-md: 8px; --r-lg: 12px; --r-full: 9999px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font); background: #E5E7EB; }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+      background: #1F2937; color: #fff; padding: 14px 24px;
+      display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 100;
+    }
+    .page-header a { color: #9CA3AF; text-decoration: none; font-size: 13px; }
+    .page-header a:hover { color: #fff; }
+    .page-header .sep { color: #4B5563; }
+    .page-header h1 { font-size: 15px; font-weight: 600; }
+    .page-desc { background: #374151; color: #D1D5DB; font-size: 12px; padding: 8px 24px; }
+
+    /* ── FLOW LAYOUT ── */
+    .flow-wrap {
+      padding: 32px 24px;
+      display: flex; flex-wrap: wrap; gap: 40px;
+      justify-content: center;
+    }
+    .screen-col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .screen-label {
+      font-size: 12px; font-weight: 600; color: #6B7280;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .screen-sublabel { font-size: 11px; color: #9CA3AF; }
+
+    /* ── PHONE SHELL ── */
+    .phone {
+      width: 390px; height: 844px; background: var(--surface);
+      border-radius: 40px; overflow: hidden; position: relative;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.18), 0 0 0 8px #1F2937;
+      flex-shrink: 0;
+    }
+
+    /* ── STATUS BAR ── */
+    .status-bar {
+      height: 47px; display: flex; align-items: center;
+      justify-content: space-between; padding: 0 20px;
+      font-size: 13px; font-weight: 600;
+    }
+    .status-bar.light { background: var(--surface); color: var(--text); }
+    .status-bar.dark  { background: var(--primary); color: #fff; }
+
+    /* ── NAV BAR ── */
+    .nav-bar {
+      height: 56px; display: flex; align-items: center;
+      padding: 0 16px; border-bottom: 1px solid var(--border);
+      position: relative;
+    }
+    .nav-bar.green { background: var(--primary); border-bottom: none; }
+    .nav-bar .nav-back {
+      font-size: 22px; cursor: pointer; color: var(--text);
+      background: none; border: none; padding: 8px; margin-right: 4px;
+      border-radius: var(--r-md); line-height: 1;
+    }
+    .nav-bar.green .nav-back { color: #fff; }
+    .nav-bar .nav-title {
+      position: absolute; left: 0; right: 0; text-align: center;
+      font-size: 17px; font-weight: 600; pointer-events: none;
+    }
+    .nav-bar.green .nav-title { color: #fff; }
+    .nav-bar .nav-title.dark { color: var(--text); }
+    .nav-bar .nav-close {
+      font-size: 20px; cursor: pointer; color: var(--text);
+      background: none; border: none; padding: 8px; line-height: 1;
+    }
+
+    /* ── CONTENT ── */
+    .content {
+      overflow-y: auto; background: var(--bg);
+      /* Height = 844 - statusBar - navBar */
+      height: calc(844px - 47px - 56px);
+    }
+    .content.with-bottom { height: calc(844px - 47px - 56px - 80px); }
+
+    /* ── HOME ── */
+    .home-summary {
+      background: var(--primary); color: #fff;
+      padding: 16px 16px 24px;
+    }
+    .home-summary .label { font-size: 12px; color: #DCFCE7; text-align: center; }
+    .home-summary .amount {
+      font-size: 28px; font-weight: 700; text-align: center;
+      margin-top: 4px; line-height: 1.2;
+    }
+    .section-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 16px 8px; background: var(--bg);
+    }
+    .section-header span { font-size: 15px; font-weight: 600; }
+    .section-header a { font-size: 13px; color: var(--primary); text-decoration: none; }
+    .tx-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .tx-icon {
+      width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .tx-text { flex: 1; }
+    .tx-text .cat { font-size: 14px; font-weight: 500; }
+    .tx-text .note { font-size: 12px; color: var(--muted); margin-top: 1px; }
+    .tx-amount { font-size: 13px; font-weight: 600; white-space: nowrap; }
+    .tx-row.new-tx { background: #F0FDF4; }
+
+    /* ── BOTTOM NAV ── */
+    .bottom-nav {
+      height: 80px; background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center;
+    }
+    .bn-item {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; gap: 3px; padding: 8px 0;
+    }
+    .bn-icon { font-size: 20px; }
+    .bn-label { font-size: 10px; }
+    .bn-item.active .bn-label { color: var(--primary); font-weight: 500; }
+    .bn-item:not(.active) .bn-label { color: var(--muted); }
+
+    /* ── FAB ── */
+    .fab-wrap { position: absolute; bottom: 92px; right: 16px; }
+    .fab {
+      width: 58px; height: 58px; border-radius: 50%;
+      background: var(--primary); color: #fff;
+      border: none; cursor: pointer; font-size: 28px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 16px rgba(22,163,74,0.45);
+      transition: background 0.15s, transform 0.1s;
+    }
+    .fab:hover { background: var(--primary-hover); transform: scale(1.05); }
+    .fab:active { transform: scale(0.97); }
+
+    /* ── CHOOSE TYPE ── */
+    .choose-heading { padding: 24px 16px 8px; }
+    .choose-heading h2 { font-size: 22px; font-weight: 700; }
+    .type-list { padding: 8px 16px; display: flex; flex-direction: column; gap: 10px; }
+    .type-card {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: var(--r-lg); padding: 16px 14px;
+      cursor: pointer; text-decoration: none; color: var(--text);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .type-card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(22,163,74,0.10);
+    }
+    .type-icon {
+      width: 42px; height: 42px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+    }
+    .type-label { font-size: 16px; font-weight: 600; flex: 1; }
+    .type-chevron { font-size: 18px; color: var(--muted); }
+
+    /* ── FORM ── */
+    .amount-display {
+      margin: 16px; padding: 16px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-lg); text-align: center;
+    }
+    .amount-display .label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .amount-display .value { font-size: 28px; font-weight: 700; line-height: 1.2; }
+    .amount-display .sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+    .form-fields { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-label { font-size: 12px; font-weight: 500; color: var(--muted); }
+    .form-input {
+      width: 100%; height: 44px; padding: 0 12px;
+      border: 1px solid var(--border); border-radius: var(--r-md);
+      background: var(--surface); font-size: 15px; font-family: var(--font);
+      color: var(--text); outline: none; transition: border-color 0.15s;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .form-input:focus, .form-input.focused {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(22,163,74,0.1);
+    }
+    .form-input.error { border-color: var(--error); }
+    .form-select {
+      width: 100%; height: 44px; padding: 0 12px;
+      border: 1px solid var(--border); border-radius: var(--r-md);
+      background: var(--surface); font-size: 15px; font-family: var(--font);
+      color: var(--text); outline: none; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center;
+      transition: border-color 0.15s;
+    }
+    .form-select:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(22,163,74,0.1); }
+    .form-select.error { border-color: var(--error); }
+    .helper-text { font-size: 11px; color: var(--info); margin-top: 3px; }
+    .error-text { font-size: 12px; color: var(--error); margin-top: 3px; display: none; }
+    .error-text.show { display: block; }
+    .char-counter { font-size: 11px; color: var(--muted); text-align: right; margin-top: 2px; }
+    textarea.form-input {
+      height: 72px; padding: 10px 12px; resize: none;
+      font-family: var(--font); font-size: 15px;
+    }
+
+    /* ── SAVE BUTTON ── */
+    .btn-save {
+      margin: 0 16px 16px; width: calc(100% - 32px); height: 52px;
+      background: var(--primary); color: #fff; border: none;
+      border-radius: var(--r-md); font-size: 17px; font-weight: 600;
+      font-family: var(--font); cursor: pointer;
+      box-shadow: 0 4px 12px rgba(22,163,74,0.3);
+      transition: background 0.15s, transform 0.1s;
+    }
+    .btn-save:hover { background: var(--primary-hover); }
+    .btn-save:active { transform: scale(0.99); }
+
+    /* ── DEMO ERROR TOGGLE ── */
+    .demo-toggle {
+      margin: 0 16px 8px; display: flex; gap: 8px;
+    }
+    .btn-demo {
+      flex: 1; height: 32px; font-size: 11px; font-weight: 600;
+      border-radius: var(--r-sm); border: 1px solid var(--border);
+      background: var(--surface); cursor: pointer; font-family: var(--font);
+      color: var(--muted); transition: all 0.15s;
+    }
+    .btn-demo:hover { border-color: var(--error); color: var(--error); }
+
+    /* ── TOAST ── */
+    .toast {
+      position: absolute; left: 24px; right: 24px; bottom: 92px;
+      background: #0F172A; color: #fff; border-radius: var(--r-lg);
+      padding: 14px 16px; display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+      animation: toast-in 0.3s ease;
+    }
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .toast-check {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--primary); display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0; font-size: 13px;
+    }
+    .toast-msg { font-size: 15px; font-weight: 500; }
+
+    /* ── SCROLL HINT ARROWS ── */
+    .nav-hint {
+      display: flex; justify-content: center; gap: 8px;
+      padding: 0 16px 16px; flex-wrap: wrap;
+    }
+    .nav-hint button {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-full); padding: 6px 14px;
+      font-size: 12px; color: var(--primary); cursor: pointer;
+      font-family: var(--font); font-weight: 500;
+      transition: background 0.15s;
+    }
+    .nav-hint button:hover { background: #F0FDF4; }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <a href="../index.html">🏠 Prototype</a>
+  <span class="sep">›</span>
+  <span style="color:#D1D5DB">Thêm giao dịch</span>
+  <h1 style="margin-left:auto;font-size:13px;color:#9CA3AF">7 màn • Scroll ngang</h1>
+</div>
+<div class="page-desc">
+  💡 Tap vào các nút trong phone để navigate. Mỗi phone = 1 màn trong flow.
+</div>
+
+<div class="flow-wrap" id="flowWrap">
+
+  <!-- ══════════════════════════════════════════
+       MÀN 1 — HOME
+  ══════════════════════════════════════════ -->
+  <div class="screen-col" id="col-1">
+    <div class="screen-label">Màn 1</div>
+    <div class="screen-sublabel">Home</div>
+    <div class="phone">
+      <!-- Status -->
+      <div class="status-bar dark">
+        <span>9:41</span><span>Wifi  Batt</span>
+      </div>
+      <!-- Nav -->
+      <div class="nav-bar green" style="border-bottom:none;">
+        <div class="nav-title" style="color:#fff">Chi tiêu tháng 6</div>
+      </div>
+      <!-- Summary -->
+      <div class="home-summary">
+        <div class="label">Tổng chi tháng này</div>
+        <div class="amount">-3,200,000 ₫</div>
+      </div>
+      <!-- List -->
+      <div style="flex:1;overflow-y:auto;background:var(--bg);">
+        <div class="section-header">
+          <span>Giao dịch gần đây</span>
+          <a href="javascript:void(0)">Xem tất cả</a>
+        </div>
+        <div class="tx-row">
+          <div class="tx-icon" style="background:var(--expense-light)">🍜</div>
+          <div class="tx-text"><div class="cat">Ăn uống</div><div class="note">Bún bò trưa · 12:30</div></div>
+          <div class="tx-amount" style="color:var(--expense)">-35,000 ₫</div>
+        </div>
+        <div class="tx-row">
+          <div class="tx-icon" style="background:var(--expense-light)">🚗</div>
+          <div class="tx-text"><div class="cat">Đi lại</div><div class="note">Đổ xăng · 09:15</div></div>
+          <div class="tx-amount" style="color:var(--expense)">-80,000 ₫</div>
+        </div>
+        <div class="tx-row">
+          <div class="tx-icon" style="background:var(--income-light)">💼</div>
+          <div class="tx-text"><div class="cat">Thu nhập</div><div class="note">Lương T6 · Hôm qua</div></div>
+          <div class="tx-amount" style="color:var(--income)">+8,000,000 ₫</div>
+        </div>
+      </div>
+      <!-- Bottom nav -->
+      <div class="bottom-nav">
+        <div class="bn-item active"><span class="bn-icon">🏠</span><span class="bn-label">Tổng quan</span></div>
+        <div class="bn-item"><span class="bn-icon">🕐</span><span class="bn-label">Lịch sử</span></div>
+        <div class="bn-item"><span class="bn-icon">📊</span><span class="bn-label">Báo cáo</span></div>
+        <div class="bn-item"><span class="bn-icon">⚙️</span><span class="bn-label">Cài đặt</span></div>
+      </div>
+      <!-- FAB -->
+      <div class="fab-wrap">
+        <button class="fab" onclick="scrollTo('col-2')" title="Thêm giao dịch">+</button>
+      </div>
+    </div>
+    <div class="nav-hint"><button onclick="scrollTo('col-2')">Tap [+] → Chọn loại ›</button></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       MÀN 2 — CHỌN LOẠI
+  ══════════════════════════════════════════ -->
+  <div class="screen-col" id="col-2">
+    <div class="screen-label">Màn 2</div>
+    <div class="screen-sublabel">Chọn loại giao dịch</div>
+    <div class="phone">
+      <div class="status-bar light"><span>9:41</span><span>Wifi  Batt</span></div>
+      <div class="nav-bar">
+        <button class="nav-close" onclick="scrollTo('col-1')">✕</button>
+        <div class="nav-title dark">Thêm giao dịch</div>
+      </div>
+      <div class="content" style="background:var(--surface);">
+        <div class="choose-heading">
+          <h2>Chọn loại giao dịch</h2>
+        </div>
+        <div class="type-list">
+          <a class="type-card" onclick="scrollTo('col-3')">
+            <div class="type-icon" style="background:var(--income-light)">↑</div>
+            <span class="type-label">Thu nhập</span>
+            <span class="type-chevron">›</span>
+          </a>
+          <a class="type-card" onclick="scrollTo('col-4')">
+            <div class="type-icon" style="background:var(--expense-light)">↓</div>
+            <span class="type-label">Chi tiêu</span>
+            <span class="type-chevron">›</span>
+          </a>
+          <a class="type-card" onclick="scrollTo('col-5')">
+            <div class="type-icon" style="background:var(--warning-light);font-size:18px;">💳</div>
+            <span class="type-label">Chi tín dụng</span>
+            <span class="type-chevron">›</span>
+          </a>
+          <a class="type-card" onclick="scrollTo('col-6')">
+            <div class="type-icon" style="background:var(--info-light)">↩</div>
+            <span class="type-label">Trả nợ</span>
+            <span class="type-chevron">›</span>
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="nav-hint">
+      <button onclick="scrollTo('col-1')">‹ Về Home</button>
+      <button onclick="scrollTo('col-3')">Thu nhập ›</button>
+      <button onclick="scrollTo('col-4')">Chi tiêu ›</button>
+      <button onclick="scrollTo('col-5')">Tín dụng ›</button>
+      <button onclick="scrollTo('col-6')">Trả nợ ›</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       MÀN 3 — THU NHẬP
+  ══════════════════════════════════════════ -->
+  <div class="screen-col" id="col-3">
+    <div class="screen-label">Màn 3</div>
+    <div class="screen-sublabel">Form Thu nhập</div>
+    <div class="phone">
+      <div class="status-bar light"><span>9:41</span><span>Wifi  Batt</span></div>
+      <div class="nav-bar">
+        <button class="nav-back" onclick="scrollTo('col-2')">‹</button>
+        <div class="nav-title dark">Thu nhập</div>
+      </div>
+      <div class="content" style="overflow-y:auto;">
+        <!-- Amount display -->
+        <div class="amount-display">
+          <div class="label">Số tiền thu nhập</div>
+          <div class="value" id="income-display" style="color:var(--income)">+ 8,000,000 ₫</div>
+        </div>
+        <div class="form-fields">
+          <div class="form-group">
+            <label class="form-label">Số tiền *</label>
+            <input class="form-input" type="number" value="8000000" id="income-amount"
+              oninput="updateDisplay('income-display', this.value, true)"
+              placeholder="Nhập số tiền">
+            <div class="error-text" id="err-income-amount">Vui lòng nhập số tiền.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Danh mục *</label>
+            <select class="form-select" id="income-cat">
+              <option value="">-- Chọn danh mục --</option>
+              <option value="luong" selected>💼 Lương</option>
+              <option value="thuong">🎁 Thưởng</option>
+              <option value="khac">📦 Khác</option>
+            </select>
+            <div class="error-text" id="err-income-cat">Vui lòng chọn danh mục.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ngày *</label>
+            <input class="form-select" type="date" value="2026-06-11">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ví nhận *</label>
+            <select class="form-select">
+              <option value="ngan-hang" selected>🏦 Ngân hàng</option>
+              <option value="tien-mat">👛 Tiền mặt</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ghi chú</label>
+            <textarea class="form-input" id="income-note" maxlength="500"
+              oninput="updateCounter('income-note', 'counter-income')"
+              placeholder="Thêm ghi chú (tuỳ chọn)">Lương tháng 6</textarea>
+            <div class="char-counter"><span id="counter-income">13</span>/500</div>
+          </div>
+        </div>
+        <button class="btn-save" onclick="saveForm('income')">Lưu</button>
+      </div>
+    </div>
+    <div class="nav-hint">
+      <button onclick="scrollTo('col-2')">‹ Chọn loại</button>
+      <button onclick="saveForm('income')">✓ Lưu → Màn 7</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       MÀN 4 — CHI TIÊU (tiền mặt)
+  ══════════════════════════════════════════ -->
+  <div class="screen-col" id="col-4">
+    <div class="screen-label">Màn 4</div>
+    <div class="screen-sublabel">Form Chi tiêu</div>
+    <div class="phone">
+      <div class="status-bar light"><span>9:41</span><span>Wifi  Batt</span></div>
+      <div class="nav-bar">
+        <button class="nav-back" onclick="scrollTo('col-2')">‹</button>
+        <div class="nav-title dark">Chi tiêu</div>
+      </div>
+      <div class="content" style="overflow-y:auto;">
+        <div class="amount-display">
+          <div class="label">Số tiền chi</div>
+          <div class="value" id="cash-display" style="color:var(--expense)">- 200,000 ₫</div>
+        </div>
+        <div class="form-fields">
+          <div class="form-group">
+            <label class="form-label">Số tiền *</label>
+            <input class="form-input" type="number" value="200000" id="cash-amount"
+              oninput="updateDisplay('cash-display', this.value, false)"
+              placeholder="Nhập số tiền">
+            <div class="error-text" id="err-cash-amount">Vui lòng nhập số tiền.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Danh mục *</label>
+            <select class="form-select" id="cash-cat">
+              <option value="">-- Chọn danh mục --</option>
+              <option value="an-uong" selected>🍜 Ăn uống</option>
+              <option value="di-lai">🚗 Đi lại</option>
+              <option value="mua-sam">🛍️ Mua sắm</option>
+              <option value="hoa-don">📄 Hoá đơn</option>
+              <option value="giai-tri">🎬 Giải trí</option>
+              <option value="suc-khoe">❤️ Sức khoẻ</option>
+            </select>
+            <div class="error-text" id="err-cash-cat">Vui lòng chọn danh mục.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ngày *</label>
+            <input class="form-select" type="date" value="2026-06-11">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ví ra *</label>
+            <select class="form-select">
+              <option value="tien-mat" selected>👛 Tiền mặt</option>
+              <option value="ngan-hang">🏦 Ngân hàng</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ghi chú</label>
+            <textarea class="form-input" id="cash-note" maxlength="500"
+              oninput="updateCounter('cash-note', 'counter-cash')"
+              placeholder="Thêm ghi chú (tuỳ chọn)">Bún bò trưa</textarea>
+            <div class="char-counter"><span id="counter-cash">11</span>/500</div>
+          </div>
+        </div>
+        <div class="demo-toggle">
+          <button class="btn-demo" onclick="toggleError('cash')">⚡ Demo lỗi validation</button>
+        </div>
+        <button class="btn-save" onclick="saveForm('cash')">Lưu</button>
+      </div>
+    </div>
+    <div class="nav-hint">
+      <button onclick="scrollTo('col-2')">‹ Chọn loại</button>
+      <button onclick="saveForm('cash')">✓ Lưu → Màn 7</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       MÀN 5 — CHI TÍN DỤNG
+  ══════════════════════════════════════════ -->
+  <div class="screen-col" id="col-5">
+    <div class="screen-label">Màn 5</div>
+    <div class="screen-sublabel">Form Chi tín dụng</div>
+    <div class="phone">
+      <div class="status-bar light"><span>9:41</span><span>Wifi  Batt</span></div>
+      <div class="nav-bar">
+        <button class="nav-back" onclick="scrollTo('col-2')">‹</button>
+        <div class="nav-title dark">Chi tín dụng</div>
+      </div>
+      <div class="content" style="overflow-y:auto;">
+        <div class="amount-display">
+          <div class="label">Số tiền (vào dư nợ thẻ)</div>
+          <div class="value" id="credit-display" style="color:var(--warning)">200,000 ₫</div>
+          <div class="sub">Tiền mặt không đổi · Dư nợ tăng</div>
+        </div>
+        <div class="form-fields">
+          <div class="form-group">
+            <label class="form-label">Số tiền *</label>
+            <input class="form-input" type="number" value="200000" id="credit-amount"
+              oninput="updateCreditDisplay(this.value)"
+              placeholder="Nhập số tiền">
+            <div class="error-text" id="err-credit-amount">Vui lòng nhập số tiền.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Danh mục *</label>
+            <select class="form-select">
+              <option value="an-uong" selected>🍜 Ăn uống</option>
+              <option value="mua-sam">🛍️ Mua sắm</option>
+              <option value="di-lai">🚗 Đi lại</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Thẻ tín dụng *</label>
+            <select class="form-select focused" id="credit-card" onchange="updateStatement()">
+              <option value="">-- Chọn thẻ --</option>
+              <option value="tcb" selected>💳 TCB Everyday (chốt ngày 15)</option>
+              <option value="vpbank">💳 VPBank (chốt ngày 20)</option>
+            </select>
+            <div class="helper-text" id="statement-helper">ⓘ Kỳ sao kê: 06/2026</div>
+            <div class="error-text" id="err-credit-card">Vui lòng chọn thẻ tín dụng.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ngày *</label>
+            <input class="form-select" type="date" value="2026-06-11">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ghi chú</label>
+            <textarea class="form-input" id="credit-note" maxlength="500"
+              oninput="updateCounter('credit-note', 'counter-credit')"
+              placeholder="Thêm ghi chú (tuỳ chọn)">Bún bò trưa</textarea>
+            <div class="char-counter"><span id="counter-credit">11</span>/500</div>
+          </div>
+        </div>
+        <div class="demo-toggle">
+          <button class="btn-demo" onclick="toggleError('credit')">⚡ Demo lỗi: chưa chọn thẻ</button>
+        </div>
+        <button class="btn-save" onclick="saveForm('credit')">Lưu</button>
+      </div>
+    </div>
+    <div class="nav-hint">
+      <button onclick="scrollTo('col-2')">‹ Chọn loại</button>
+      <button onclick="saveForm('credit')">✓ Lưu → Màn 7</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       MÀN 6 — TRẢ NỢ
+  ══════════════════════════════════════════ -->
+  <div class="screen-col" id="col-6">
+    <div class="screen-label">Màn 6</div>
+    <div class="screen-sublabel">Form Trả nợ</div>
+    <div class="phone">
+      <div class="status-bar light"><span>9:41</span><span>Wifi  Batt</span></div>
+      <div class="nav-bar">
+        <button class="nav-back" onclick="scrollTo('col-2')">‹</button>
+        <div class="nav-title dark">Trả nợ</div>
+      </div>
+      <div class="content" style="overflow-y:auto;">
+        <div class="amount-display">
+          <div class="label">Số tiền trả</div>
+          <div class="value" id="debt-display" style="color:var(--expense)">- 500,000 ₫</div>
+          <div class="sub">Tiền mặt giảm · Dư nợ giảm</div>
+        </div>
+        <div class="form-fields">
+          <div class="form-group">
+            <label class="form-label">Số tiền *</label>
+            <input class="form-input" type="number" value="500000" id="debt-amount"
+              oninput="updateDebtDisplay(this.value)"
+              placeholder="Nhập số tiền">
+            <div class="error-text" id="err-debt-amount">Vui lòng nhập số tiền.</div>
+            <div class="error-text" id="err-debt-exceed">Số tiền vượt quá dư nợ kỳ này (còn 4,500,000 ₫).</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nguồn nợ *</label>
+            <select class="form-select" id="debt-source">
+              <option value="">-- Chọn nguồn nợ --</option>
+              <option value="tcb" selected>💳 TCB Everyday</option>
+              <option value="vpbank">💳 VPBank</option>
+              <option value="ca-nhan">👤 Vay anh Tuấn</option>
+            </select>
+            <div class="error-text" id="err-debt-source">Vui lòng chọn nguồn nợ.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Kỳ sao kê đang trả *</label>
+            <select class="form-select" id="debt-period">
+              <option value="">-- Chọn kỳ --</option>
+              <option value="05-2026">05/2026 (dư nợ 1,200,000 ₫)</option>
+              <option value="06-2026" selected>06/2026 (dư nợ 4,500,000 ₫)</option>
+            </select>
+            <div class="helper-text">ⓘ Dư nợ kỳ này: 4,500,000 ₫</div>
+            <div class="error-text" id="err-debt-period">Vui lòng chọn kỳ sao kê đang trả.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ví ra *</label>
+            <select class="form-select">
+              <option value="ngan-hang" selected>🏦 Ngân hàng</option>
+              <option value="tien-mat">👛 Tiền mặt</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ngày *</label>
+            <input class="form-select" type="date" value="2026-06-11">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ghi chú</label>
+            <textarea class="form-input" id="debt-note" maxlength="500"
+              oninput="updateCounter('debt-note', 'counter-debt')"
+              placeholder="Thêm ghi chú (tuỳ chọn)">Thanh toán TCB T6</textarea>
+            <div class="char-counter"><span id="counter-debt">18</span>/500</div>
+          </div>
+        </div>
+        <div class="demo-toggle">
+          <button class="btn-demo" onclick="toggleError('debt')">⚡ Demo lỗi: vượt dư nợ</button>
+        </div>
+        <button class="btn-save" onclick="saveForm('debt')">Lưu</button>
+      </div>
+    </div>
+    <div class="nav-hint">
+      <button onclick="scrollTo('col-2')">‹ Chọn loại</button>
+      <button onclick="saveForm('debt')">✓ Lưu → Màn 7</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       MÀN 7 — HOME + TOAST
+  ══════════════════════════════════════════ -->
+  <div class="screen-col" id="col-7">
+    <div class="screen-label">Màn 7</div>
+    <div class="screen-sublabel">Lưu thành công</div>
+    <div class="phone" id="phone-7">
+      <div class="status-bar dark"><span>9:41</span><span>Wifi  Batt</span></div>
+      <div class="nav-bar green" style="border-bottom:none;">
+        <div class="nav-title" style="color:#fff">Chi tiêu tháng 6</div>
+      </div>
+      <div class="home-summary">
+        <div class="label">Tổng chi tháng này</div>
+        <div class="amount" id="new-total">-3,400,000 ₫</div>
+      </div>
+      <div style="flex:1;overflow-y:auto;background:var(--bg);">
+        <div class="section-header">
+          <span>Giao dịch gần đây</span>
+          <a href="javascript:void(0)">Xem tất cả</a>
+        </div>
+        <div class="tx-row new-tx">
+          <div class="tx-icon" style="background:var(--expense-light)">🍜</div>
+          <div class="tx-text">
+            <div class="cat" id="new-tx-cat">Ăn uống</div>
+            <div class="note" id="new-tx-note">Bún bò trưa · Vừa xong</div>
+          </div>
+          <div class="tx-amount" id="new-tx-amount" style="color:var(--expense)">-200,000 ₫</div>
+        </div>
+        <div class="tx-row">
+          <div class="tx-icon" style="background:var(--expense-light)">🚗</div>
+          <div class="tx-text"><div class="cat">Đi lại</div><div class="note">Đổ xăng · 09:15</div></div>
+          <div class="tx-amount" style="color:var(--expense)">-80,000 ₫</div>
+        </div>
+        <div class="tx-row">
+          <div class="tx-icon" style="background:var(--income-light)">💼</div>
+          <div class="tx-text"><div class="cat">Thu nhập</div><div class="note">Lương T6 · Hôm qua</div></div>
+          <div class="tx-amount" style="color:var(--income)">+8,000,000 ₫</div>
+        </div>
+      </div>
+      <!-- Bottom nav -->
+      <div class="bottom-nav">
+        <div class="bn-item active"><span class="bn-icon">🏠</span><span class="bn-label">Tổng quan</span></div>
+        <div class="bn-item"><span class="bn-icon">🕐</span><span class="bn-label">Lịch sử</span></div>
+        <div class="bn-item"><span class="bn-icon">📊</span><span class="bn-label">Báo cáo</span></div>
+        <div class="bn-item"><span class="bn-icon">⚙️</span><span class="bn-label">Cài đặt</span></div>
+      </div>
+      <!-- FAB -->
+      <div class="fab-wrap">
+        <button class="fab" onclick="scrollTo('col-2')">+</button>
+      </div>
+      <!-- Toast -->
+      <div class="toast" id="success-toast">
+        <div class="toast-check">✓</div>
+        <div class="toast-msg">Đã lưu giao dịch.</div>
+      </div>
+    </div>
+    <div class="nav-hint">
+      <button onclick="scrollTo('col-1')">‹ Về Home gốc</button>
+      <button onclick="scrollTo('col-2')">Thêm tiếp ›</button>
+    </div>
+  </div>
+
+</div><!-- /flow-wrap -->
+
+<script>
+// ── Scroll to screen ──
+function scrollTo(colId) {
+  var el = document.getElementById(colId);
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+}
+
+// ── Amount display updater ──
+function fmt(n) {
+  if (!n || isNaN(n)) return '0';
+  return Number(n).toLocaleString('vi-VN');
+}
+function updateDisplay(displayId, val, isIncome) {
+  var el = document.getElementById(displayId);
+  if (!el) return;
+  var sign = isIncome ? '+ ' : '- ';
+  el.textContent = sign + fmt(val) + ' ₫';
+}
+function updateCreditDisplay(val) {
+  var el = document.getElementById('credit-display');
+  if (el) el.textContent = fmt(val) + ' ₫';
+}
+function updateDebtDisplay(val) {
+  var el = document.getElementById('debt-display');
+  if (el) el.textContent = '- ' + fmt(val) + ' ₫';
+}
+
+// ── Char counter ──
+function updateCounter(textareaId, counterId) {
+  var ta = document.getElementById(textareaId);
+  var counter = document.getElementById(counterId);
+  if (ta && counter) counter.textContent = ta.value.length;
+}
+
+// ── Statement helper ──
+function updateStatement() {
+  var sel = document.getElementById('credit-card');
+  var helper = document.getElementById('statement-helper');
+  if (!sel || !helper) return;
+  if (sel.value === 'vpbank') {
+    helper.textContent = 'ⓘ Kỳ sao kê: 06/2026 (chốt ngày 20)';
+  } else {
+    helper.textContent = 'ⓘ Kỳ sao kê: 06/2026 (chốt ngày 15)';
+  }
+}
+
+// ── Demo error toggle ──
+var errorState = {};
+function toggleError(type) {
+  if (type === 'cash') {
+    errorState.cash = !errorState.cash;
+    var amtErr = document.getElementById('err-cash-amount');
+    var catErr = document.getElementById('err-cash-cat');
+    var amtInput = document.getElementById('cash-amount');
+    var catInput = document.getElementById('cash-cat');
+    if (errorState.cash) {
+      amtErr.classList.add('show'); amtInput.classList.add('error');
+      catErr.classList.add('show'); catInput.classList.add('error');
+    } else {
+      amtErr.classList.remove('show'); amtInput.classList.remove('error');
+      catErr.classList.remove('show'); catInput.classList.remove('error');
+    }
+  } else if (type === 'credit') {
+    errorState.credit = !errorState.credit;
+    var cardErr = document.getElementById('err-credit-card');
+    var cardSel = document.getElementById('credit-card');
+    if (errorState.credit) {
+      // Reset card selection to show error
+      cardSel.value = '';
+      cardErr.classList.add('show'); cardSel.classList.add('error');
+      document.getElementById('statement-helper').textContent = '';
+    } else {
+      cardSel.value = 'tcb';
+      cardErr.classList.remove('show'); cardSel.classList.remove('error');
+      document.getElementById('statement-helper').textContent = 'ⓘ Kỳ sao kê: 06/2026';
+    }
+  } else if (type === 'debt') {
+    errorState.debt = !errorState.debt;
+    var exceedErr = document.getElementById('err-debt-exceed');
+    var amtInput = document.getElementById('debt-amount');
+    if (errorState.debt) {
+      amtInput.value = '99999999';
+      updateDebtDisplay('99999999');
+      exceedErr.classList.add('show'); amtInput.classList.add('error');
+    } else {
+      amtInput.value = '500000';
+      updateDebtDisplay('500000');
+      exceedErr.classList.remove('show'); amtInput.classList.remove('error');
+    }
+  }
+}
+
+// ── Save form & show Màn 7 ──
+function saveForm(type) {
+  // Simple validation
+  var valid = true;
+  if (type === 'income') {
+    var amt = document.getElementById('income-amount').value;
+    var cat = document.getElementById('income-cat').value;
+    var amtErr = document.getElementById('err-income-amount');
+    var catErr = document.getElementById('err-income-cat');
+    if (!amt || Number(amt) <= 0) {
+      amtErr.classList.add('show');
+      document.getElementById('income-amount').classList.add('error');
+      valid = false;
+    } else { amtErr.classList.remove('show'); document.getElementById('income-amount').classList.remove('error'); }
+    if (!cat) {
+      catErr.classList.add('show');
+      document.getElementById('income-cat').classList.add('error');
+      valid = false;
+    } else { catErr.classList.remove('show'); document.getElementById('income-cat').classList.remove('error'); }
+    if (!valid) return;
+    // Update Màn 7
+    document.getElementById('new-tx-cat').textContent = 'Thu nhập';
+    document.getElementById('new-tx-note').textContent = (document.getElementById('income-note').value || 'Lương') + ' · Vừa xong';
+    document.getElementById('new-tx-amount').textContent = '+ ' + fmt(amt) + ' ₫';
+    document.getElementById('new-tx-amount').style.color = 'var(--income)';
+    document.getElementById('new-total').textContent = '-3,200,000 ₫';
+  } else if (type === 'cash') {
+    var amt = document.getElementById('cash-amount').value;
+    var cat = document.getElementById('cash-cat').value;
+    var amtErr = document.getElementById('err-cash-amount');
+    var catErr = document.getElementById('err-cash-cat');
+    if (!amt || Number(amt) <= 0) { amtErr.classList.add('show'); document.getElementById('cash-amount').classList.add('error'); valid = false; }
+    else { amtErr.classList.remove('show'); document.getElementById('cash-amount').classList.remove('error'); }
+    if (!cat) { catErr.classList.add('show'); document.getElementById('cash-cat').classList.add('error'); valid = false; }
+    else { catErr.classList.remove('show'); document.getElementById('cash-cat').classList.remove('error'); }
+    if (!valid) return;
+    document.getElementById('new-tx-cat').textContent = document.getElementById('cash-cat').options[document.getElementById('cash-cat').selectedIndex].text;
+    document.getElementById('new-tx-note').textContent = (document.getElementById('cash-note').value || '') + ' · Vừa xong';
+    document.getElementById('new-tx-amount').textContent = '- ' + fmt(amt) + ' ₫';
+    document.getElementById('new-tx-amount').style.color = 'var(--expense)';
+    document.getElementById('new-total').textContent = '- ' + fmt(3200000 + Number(amt)) + ' ₫';
+  } else if (type === 'credit') {
+    var amt = document.getElementById('credit-amount').value;
+    var card = document.getElementById('credit-card').value;
+    if (!amt || Number(amt) <= 0) { document.getElementById('err-credit-amount').classList.add('show'); valid = false; }
+    else document.getElementById('err-credit-amount').classList.remove('show');
+    if (!card) { document.getElementById('err-credit-card').classList.add('show'); document.getElementById('credit-card').classList.add('error'); valid = false; }
+    else { document.getElementById('err-credit-card').classList.remove('show'); document.getElementById('credit-card').classList.remove('error'); }
+    if (!valid) return;
+    document.getElementById('new-tx-cat').textContent = 'Chi tín dụng';
+    document.getElementById('new-tx-note').textContent = (document.getElementById('credit-note').value || '') + ' · Vừa xong';
+    document.getElementById('new-tx-amount').textContent = fmt(amt) + ' ₫ (dư nợ)';
+    document.getElementById('new-tx-amount').style.color = 'var(--warning)';
+    document.getElementById('new-total').textContent = '-3,200,000 ₫';
+  } else if (type === 'debt') {
+    var amt = document.getElementById('debt-amount').value;
+    if (!amt || Number(amt) <= 0) { document.getElementById('err-debt-amount').classList.add('show'); valid = false; }
+    else document.getElementById('err-debt-amount').classList.remove('show');
+    if (Number(amt) > 4500000) { document.getElementById('err-debt-exceed').classList.add('show'); valid = false; }
+    else document.getElementById('err-debt-exceed').classList.remove('show');
+    if (!valid) return;
+    document.getElementById('new-tx-cat').textContent = 'Trả nợ';
+    document.getElementById('new-tx-note').textContent = (document.getElementById('debt-note').value || '') + ' · Vừa xong';
+    document.getElementById('new-tx-amount').textContent = '- ' + fmt(amt) + ' ₫';
+    document.getElementById('new-tx-amount').style.color = 'var(--expense)';
+    document.getElementById('new-total').textContent = '- ' + fmt(3200000 + Number(amt)) + ' ₫';
+  }
+
+  // Show Màn 7 với toast
+  var toast = document.getElementById('success-toast');
+  toast.style.display = 'flex';
+  scrollTo('col-7');
+  // Auto hide toast sau 3s
+  setTimeout(function() {
+    toast.style.display = 'none';
+  }, 3000);
+}
+
+// Init toast hidden
+document.getElementById('success-toast').style.display = 'none';
+</script>
+
+</body>
+</html>
